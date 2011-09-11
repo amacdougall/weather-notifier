@@ -3,12 +3,16 @@
 # Probably hooked up to a cron job or something.
 import os
 import xml.dom.minidom
+from datetime import datetime
 from urllib import urlopen
 
 # email configuration
 SENDER = "smoke@alanmacdougall.com"
 RECIPIENTS = ("smoke@alanmacdougall.com", "nigel.wade7@gmail.com")
 SUBJECT = "Weather Update"
+BODY = """The temperature outside is now %d, which is within the target range
+for MAXIMUM ENJOYMENT. Go outside and play! Unless you have to 'work,' like some
+kind of 'responsible adult.' In which case keep a flask in your desk drawer."""
 
 # weather configuration
 LOCATION = "Milwaukee"
@@ -26,17 +30,15 @@ def update():
     if temperature_in_range(temperature):
         # if it just suddenly became a nice day...
         if not temperature_in_range(last_temperature):
-            # TODO: something real
-            print "Weather was pretty nice, yeah"
+            test_weather_update(temperature, "Entered optimal range.")
         else:
-            print "Currently %d degrees; still in nice range." % temperature
+            test_weather_update(temperature, "Still in optimal range.")
     else:
         # if it was a nice day and now it's not...
         if temperature_in_range(last_temperature):
-            # TODO: something real
-            print "Weather has gotten worse yo"
+            test_weather_update(temperature, "Left optimal range.")
         else:
-            print "Currently %d degrees; still pretty lame." % temperature
+            test_weather_update(temperature, "Still outside optimal range.")
 
     save_temperature(temperature)
 
@@ -86,15 +88,29 @@ def number_in_range(n, min, max):
     else:
         return False
 
-def send_weather_update():
-    """Send email with the supplied message."""
-    sendmail_location = "/usr/sbin/sendmail" # sendmail location
-    p = os.popen("%s -t" % sendmail_location, "w")
-    p.write("From: %s\n" % "from@somewhere.com")
-    p.write("To: %s\n" % "to@somewhereelse.com")
-    p.write("Subject: thesubject\n")
-    p.write("\n") # blank line separating headers from body
-    p.write("body of the mail")
-    status = p.close()
-    if status != 0:
-        # TODO: maybe some kind of logging later?
+def test_weather_update(temperature, message):
+    if not os.path.exists("test.log"):
+        log_file = file("test.log", "w")
+    else:
+        log_file = file("test.log", "a")
+
+    debug_output = "%d degrees, observed %s: %s\n" 
+    timestamp = datetime.now().strftime("%H:%M:%S, %Y-%m-%d")
+    log_file.write(debug_output % (temperature, timestamp, message))
+
+def send_weather_update(temperature):
+    try:
+        """Send email with the supplied message."""
+        sendmail_location = "/usr/sbin/sendmail" # sendmail location
+        p = os.popen("%s -t" % sendmail_location, "w")
+        p.write("From: %s\n" % SENDER)
+        p.write("To: %s\n" % ",".join(RECIPIENTS))
+        p.write("Subject: %s\n" % SUBJECT)
+        p.write("\n") # blank line separating headers from body
+        p.write(BODY % temperature)
+        status = p.close()
+        if status != 0:
+            # TODO: maybe some kind of logging later?
+            pass
+    except Exception as error:
+        pass

@@ -16,15 +16,11 @@ kind of 'responsible adult.' In which case keep a flask in your desk drawer."""
 
 # weather configuration
 LOCATION = "Milwaukee"
-TARGET_RANGE = (68, 82)
+TARGET_RANGE = (68, 85)
 TEMPERATURE_RECORD = "last_temperature.txt"
 
 def update():
-    request = "http://www.google.com/ig/api?weather=%s" % LOCATION
-    response = xml.dom.minidom.parse(urlopen(request))
-    temperature_node = find_node(response, "temp_f")
-
-    temperature = int(temperature_node.attributes["data"].firstChild.nodeValue)
+    temperature = get_current_temperature()
     last_temperature = get_last_temperature()
 
     if temperature_in_range(temperature):
@@ -46,6 +42,14 @@ def temperature_in_range(temperature):
     """True if the supplied temperature is within TARGET_RANGE."""
     min, max = TARGET_RANGE
     return number_in_range(temperature, min, max)
+
+def get_current_temperature():
+    """Return the current temperature, loaded from the Google weather API."""
+    request = "http://www.google.com/ig/api?weather=%s" % LOCATION
+    response = xml.dom.minidom.parse(urlopen(request))
+    temperature_node = find_node(response, "temp_f")
+
+    return int(temperature_node.attributes["data"].firstChild.nodeValue)
 
 def get_last_temperature():
     """Return the most recently recorded temperature in the log, creating a log
